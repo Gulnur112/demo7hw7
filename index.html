@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Movie Search</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 40px 20px;
+      background-color: #0e0e0e;
+      color: #ffffff;
+      text-align: center;
+    }
+
+    header {
+      margin-bottom: 30px;
+    }
+
+    #searchInput {
+      width: 70%;
+      padding: 10px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+
+    #searchButton {
+      padding: 10px 20px;
+      margin-left: 10px;
+      font-size: 16px;
+      background-color: white;
+      color: black;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    #movieGrid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      padding: 20px 0;
+    }
+
+    .movieCard {
+      background-color: #1f1f1f;
+      border: 1px solid #333;
+      border-radius: 10px;
+      padding: 15px;
+      text-align: left;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .movieCard img {
+      width: 100%;
+      height: auto;
+      border-radius: 8px;
+    }
+
+    .movieCard h4 {
+      font-size: 18px;
+      color:white;
+    }
+
+    .movieCard p {
+      font-size: 14px;
+      line-height: 1.4;
+    }
+
+    .pagination {
+      margin-top: 30px;
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+    }
+
+    .pagination button {
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #444;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    @media screen and (max-width: 450px) {
+      #movieGrid {
+        grid-template-columns: 1fr;
+      }
+
+      #searchInput {
+        width: 100%;
+        margin-bottom: 10px;
+      }
+
+      #searchButton {
+        width: 100%;
+        margin-left: 0;
+      }
+
+      .pagination {
+        flex-direction: column;
+        gap: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <input type="text" id="searchInput" placeholder="Search movies..." />
+    <button id="searchButton">Search</button>
+  </header>
+
+  <div id="movieGrid"></div>
+
+  <div class="pagination">
+    <button id="prevButton">Previous</button>
+    <button id="nextButton">Next</button>
+  </div>
+
+  <script>
+    const container = document.getElementById("movieGrid");
+
+    async function getData() {
+      const resp = await fetch("https://jsonfakery.com/movies/paginated?limit=10");
+      const asd = await resp.json();
+      const data = asd.data;
+
+      localStorage.setItem("data", JSON.stringify(data));
+      const sliced = data.splice(0, 15);
+      localStorage.setItem("first", JSON.stringify(sliced));
+
+      renderCards(sliced);
+    }
+
+    function renderCards(list) {
+      container.innerHTML = "";
+      list.forEach((movie) => {
+        const card = document.createElement("div");
+        card.className = "movieCard";
+        card.innerHTML = `
+          <img src="${movie.poster_path}" alt="${movie.original_title}" />
+          <h4>${movie.original_title}</h4>
+          <p>${movie.overview}</p>
+          <p><strong>Release:</strong> ${movie.release_date}</p>
+          <p><strong>Rating:</strong> ${movie.vote_average} / 10</p>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    document.getElementById("searchButton").addEventListener("click", async () => {
+      const input = document.getElementById("searchInput").value.toLowerCase().trim();
+      if (!input) {
+        container.innerHTML = `<p>Please enter a search term.</p>`;
+        return;
+      }
+
+      container.innerHTML = `<h2>Loading...</h2>`;
+      const data = JSON.parse(localStorage.getItem("data"));
+      container.innerHTML = "";
+
+      let found = false;
+      data.forEach((movie) => {
+        if (movie.original_title.toLowerCase().includes(input)) {
+          found = true;
+          renderCards([movie]);
+        }
+      });
+
+      if (!found) {
+        container.innerHTML = `<p>No results found for "${input}"</p>`;
+      }
+    });
+
+    document.getElementById("nextButton").addEventListener("click", async () => {
+      const resp = await fetch("https://jsonfakery.com/movies/paginated?limit=10&page=2");
+      const asd = await resp.json();
+      renderCards(asd.data);
+    });
+
+    document.getElementById("prevButton").addEventListener("click", () => {
+      const prevData = JSON.parse(localStorage.getItem("first"));
+      renderCards(prevData);
+    });
+
+    getData();
+  </script>
+</body>
+</html>
